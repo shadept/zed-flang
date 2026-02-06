@@ -16,8 +16,11 @@ module.exports = grammar({
     [$.expression_statement, $.index_expression],
     [$.expression_statement, $.binary_expression],
     [$.assignment_expression, $.unary_expression],
+    [$.assignment_expression, $.binary_expression, $.unary_expression],
     [$.cast_expression, $.unary_expression],
+    [$.cast_expression, $.binary_expression, $.unary_expression],
     [$.match_expression, $.unary_expression],
+    [$.match_expression, $.binary_expression, $.unary_expression],
     [$.defer_statement, $.member_expression, $.dereference_expression],
     [$.defer_statement, $.index_expression],
     [$.defer_statement, $.binary_expression],
@@ -41,6 +44,10 @@ module.exports = grammar({
     [$.if_statement, $.member_expression, $.dereference_expression],
     [$.if_statement, $.index_expression],
     [$.if_statement, $.binary_expression],
+    [$.if_statement, $.if_expression, $.grouped_expression],
+    [$.if_expression, $.grouped_expression],
+    [$.if_statement, $.grouped_expression],
+    [$.array_literal, $.index_expression],
   ],
 
   precedences: ($) => [
@@ -49,12 +56,15 @@ module.exports = grammar({
       "unary",
       "multiplicative",
       "additive",
+      "bitwise_and",
+      "bitwise_xor",
+      "bitwise_or",
+      "range",
       "comparison",
       "equality",
       "logical_and",
       "logical_or",
       "coalesce",
-      "range",
     ],
   ],
 
@@ -81,7 +91,7 @@ module.exports = grammar({
     visibility_modifier: ($) => "pub",
 
     // ===== DIRECTIVES =====
-    directive: ($) => choice("#foreign", "#intrinsic"),
+    directive: ($) => /#[a-z][a-zA-Z0-9_]*/,
 
     // ===== FUNCTIONS =====
     function_definition: ($) =>
@@ -142,7 +152,12 @@ module.exports = grammar({
     enum_variant: ($) =>
       seq(
         field("name", $.type_identifier),
-        optional($.variant_parameters),
+        optional(
+          choice(
+            $.variant_parameters,
+            seq("=", field("value", $.expression)),
+          ),
+        ),
         optional(","),
       ),
 
@@ -209,11 +224,7 @@ module.exports = grammar({
         "u32",
         "u64",
         "usize",
-        "f32",
-        "f64",
         "bool",
-        "void",
-        "never",
       ),
 
     generic_type_parameter: ($) => seq("$", $.identifier),
@@ -265,6 +276,9 @@ module.exports = grammar({
         $.defer_statement,
         $.if_statement,
         $.for_statement,
+        $.loop_statement,
+        $.break_statement,
+        $.continue_statement,
         $.expression_statement,
       ),
 
@@ -290,12 +304,19 @@ module.exports = grammar({
 
     defer_statement: ($) => seq("defer", $.expression),
 
+    loop_statement: ($) => seq("loop", field("body", $.block)),
+
+    break_statement: ($) => "break",
+
+    continue_statement: ($) => "continue",
+
     if_statement: ($) =>
       seq(
         "if",
-        "(",
-        field("condition", $.expression),
-        ")",
+        choice(
+          seq("(", field("condition", $.expression), ")"),
+          field("condition", $.expression),
+        ),
         field("consequence", choice($.block, $.expression)),
         optional(
           seq(
@@ -308,11 +329,10 @@ module.exports = grammar({
     for_statement: ($) =>
       seq(
         "for",
-        "(",
-        field("pattern", $.identifier),
-        "in",
-        field("iterable", $.expression),
-        ")",
+        choice(
+          seq("(", field("pattern", $.identifier), "in", field("iterable", $.expression), ")"),
+          seq(field("pattern", $.identifier), "in", field("iterable", $.expression)),
+        ),
         field("body", $.block),
       ),
 
@@ -335,7 +355,7 @@ module.exports = grammar({
         1,
         seq(
           field("left", $.expression),
-          field("operator", choice("=", "+=", "-=", "*=", "/=", "%=")),
+          field("operator", choice("=", "+=")),
           field("right", $.expression),
         ),
       ),
@@ -343,8 +363,8 @@ module.exports = grammar({
     binary_expression: ($) =>
       choice(
         prec.left("coalesce", seq($.expression, "??", $.expression)),
-        prec.left("logical_or", seq($.expression, "||", $.expression)),
-        prec.left("logical_and", seq($.expression, "&&", $.expression)),
+        prec.left("logical_or", seq($.expression, "or", $.expression)),
+        prec.left("logical_and", seq($.expression, "and", $.expression)),
         prec.left(
           "equality",
           seq($.expression, choice("==", "!="), $.expression),
@@ -352,6 +372,19 @@ module.exports = grammar({
         prec.left(
           "comparison",
           seq($.expression, choice("<", ">", "<=", ">="), $.expression),
+        ),
+        prec.left("range", seq($.expression, "..", optional($.expression))),
+        prec.left(
+          "bitwise_or",
+          seq($.expression, "|", $.expression),
+        ),
+        prec.left(
+          "bitwise_xor",
+          seq($.expression, "^", $.expression),
+        ),
+        prec.left(
+          "bitwise_and",
+          seq($.expression, "&", $.expression),
         ),
         prec.left(
           "additive",
@@ -361,7 +394,6 @@ module.exports = grammar({
           "multiplicative",
           seq($.expression, choice("*", "/", "%"), $.expression),
         ),
-        prec.left("range", seq($.expression, "..", optional($.expression))),
       ),
 
     unary_expression: ($) =>
@@ -424,9 +456,10 @@ module.exports = grammar({
       prec.right(
         seq(
           "if",
-          "(",
-          field("condition", $.expression),
-          ")",
+          choice(
+            seq("(", field("condition", $.expression), ")"),
+            field("condition", $.expression),
+          ),
           field("consequence", $.expression),
           optional(seq("else", field("alternative", $.expression))),
         ),
@@ -486,8 +519,8 @@ module.exports = grammar({
         "{",
         optional(
           seq(
-            $.field_initializer,
-            repeat(seq(",", $.field_initializer)),
+            $._field_entry,
+            repeat(seq(",", $._field_entry)),
             optional(","),
           ),
         ),
@@ -500,16 +533,20 @@ module.exports = grammar({
         "{",
         optional(
           seq(
-            $.field_initializer,
-            repeat(seq(",", $.field_initializer)),
+            $._field_entry,
+            repeat(seq(",", $._field_entry)),
             optional(","),
           ),
         ),
         "}",
       ),
 
+    _field_entry: ($) => choice($.field_initializer, $.field_shorthand),
+
     field_initializer: ($) =>
       seq(field("name", $.identifier), "=", field("value", $.expression)),
+
+    field_shorthand: ($) => $.identifier,
 
     function_call: ($) =>
       prec(
@@ -552,7 +589,7 @@ module.exports = grammar({
         /0x[0-9a-fA-F_]+/,
         /0b[01_]+/,
         /0o[0-7_]+/,
-        /[0-9][0-9_]*(\.[0-9][0-9_]*)?([eE][+-]?[0-9]+)?/,
+        /[0-9][0-9_]*(i8|i16|i32|i64|isize|u8|u16|u32|u64|usize)?/,
       ),
 
     string_literal: ($) =>

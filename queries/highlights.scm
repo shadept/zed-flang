@@ -22,6 +22,9 @@
   "match"
   "return"
   "defer"
+  "loop"
+  "break"
+  "continue"
 ] @keyword.control
 
 [
@@ -30,6 +33,8 @@
 
 [
   "as"
+  "and"
+  "or"
 ] @keyword.operator
 
 ; Visibility and directives
@@ -111,6 +116,9 @@
 (field_initializer
   name: (identifier) @property)
 
+(field_shorthand
+  (identifier) @property)
+
 ; Literals
 (number_literal) @number
 (string_literal) @string
@@ -128,20 +136,16 @@
   "%"
   "="
   "+="
-  "-="
-  "*="
-  "/="
-  "%="
   "=="
   "!="
   "<"
   ">"
   "<="
   ">="
-  "&&"
-  "||"
   "!"
   "&"
+  "^"
+  "|"
   "??"
   "?."
   ".."

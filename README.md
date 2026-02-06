@@ -1,94 +1,116 @@
-# FLang Extension for Zed
+# zed-flang
 
-Tree-sitter based syntax highlighting for FLang in Zed editor.
+Tree-sitter grammar and Zed editor extension for the [FLang](https://github.com/example/flang) programming language.
 
-## Quick Start
+## Features
 
-```bash
-# 1. Build
-cd extensions/zed-flang
-npm install && npm run generate
+- Syntax highlighting for `.f` files
+- Auto-indentation
+- Symbol outline (functions, structs, enums, constants, tests)
+- Support for:
+  - Functions, parameters, and return types
+  - Structs and enums with generics (`$T`)
+  - Control flow (`if`, `for`, `match`, `defer`)
+  - Pattern matching with wildcards and variant patterns
+  - Operators including `??`, `?.`, `..`, `as`
+  - String/char literals with escape sequences
+  - Visibility modifiers (`pub`)
+  - Directives (`#foreign`, `#intrinsic`)
+  - Test blocks
+  - Import declarations
 
-# 2. Install (pick your OS)
-# macOS:
-ln -s "$(pwd)" ~/Library/Application\ Support/Zed/extensions/installed/flang
+## Installing in Zed
 
-# Linux:
-ln -s "$(pwd)" ~/.config/zed/extensions/installed/flang
+### As a dev extension (local development)
 
-# 3. Restart Zed, open any .f file
-```
-
-## Building
-
-1. Install dependencies:
+1. Clone this repository and install dependencies:
    ```bash
+   git clone https://github.com/example/flang-zed.git
+   cd zed-flang
    npm install
    ```
 
 2. Generate the parser:
    ```bash
-   npm run generate
+   npx tree-sitter generate
    ```
 
-3. Test the grammar (optional):
-   ```bash
-   npm run test
-   ```
+3. In Zed, open the command palette and run **"zed: install dev extension"**, then select the `zed-flang` directory.
 
-## Installing in Zed
+4. Open any `.f` file. The status bar should show "FLang" and syntax highlighting should be active.
 
-### Option 1: Symlink (for development)
+If something goes wrong, check **"zed: open log"** in the command palette for errors.
 
-```bash
-# macOS
-ln -s "$(pwd)" ~/Library/Application\ Support/Zed/extensions/installed/flang
+### Note on `.f` files
 
-# Linux
-ln -s "$(pwd)" ~/.config/zed/extensions/installed/flang
-```
+The `.f` extension is shared with Fortran. If you have a Fortran extension installed, you may need to manually select FLang as the language for `.f` files in Zed's status bar.
 
-Restart Zed or run `zed: reload extensions` from the command palette.
-
-### Option 2: Copy
-
-Copy the entire `zed-flang` folder to the extensions directory above (rename to `flang`).
-
-### Verify
-
-1. Open a `.f` file
-2. Status bar should show "FLang"
-3. Code should be syntax highlighted
-
-If not working, check `zed: open log` for errors.
-
-## Features
-
-- Syntax highlighting for FLang `.f` files
-- Support for:
-  - Functions and parameters
-  - Structs and enums
-  - Generics (`$T`)
-  - Control flow (if, for, match, defer)
-  - Operators (including `??`, `?.`, `..`)
-  - String literals with escape sequences
-  - Comments
-  - Directives (`#foreign`, `#intrinsic`)
-  - Test blocks
-
-## File Structure
+## Project Structure
 
 ```
 zed-flang/
 ├── extension.toml          # Zed extension manifest
-├── grammar.js              # Tree-sitter grammar definition
-├── package.json            # Node.js package for tree-sitter-cli
-├── queries/
-│   ├── highlights.scm      # Syntax highlighting queries
-│   ├── indents.scm         # Auto-indentation rules
-│   ├── injections.scm      # Language injection rules
-│   └── outline.scm         # Symbol outline queries
-└── languages/
-    └── flang/
-        └── config.toml     # Language configuration
+├── grammar.js              # Tree-sitter grammar definition (source of truth)
+├── languages/
+│   └── flang/
+│       ├── config.toml     # Language config (file association, comments, brackets)
+│       ├── highlights.scm  # Syntax highlighting queries
+│       ├── indents.scm     # Auto-indentation rules
+│       ├── injections.scm  # Language injection rules
+│       └── outline.scm     # Symbol outline queries
+├── queries/                # Tree-sitter CLI query files (see note below)
+├── src/                    # Generated parser (do not edit manually)
+├── bindings/node/          # Node.js native bindings
+├── tree-sitter.json        # Tree-sitter CLI metadata
+├── package.json            # Node.js tooling config
+└── binding.gyp             # Native addon build config
 ```
+
+### Why `languages/flang/` and `queries/` both exist
+
+Zed and the tree-sitter CLI look for query files in different locations:
+
+- **`languages/flang/*.scm`** is where Zed reads query files from when loading the extension.
+- **`queries/*.scm`** is the standard location for the tree-sitter CLI (`tree-sitter highlight`, `tree-sitter test`, etc.).
+
+Neither tool reads from the other's directory, so both copies are needed. If you only use this project as a Zed extension and never run tree-sitter CLI commands, the `queries/` directory is optional. But for development and debugging, having both is useful.
+
+When modifying query files, update both locations to keep them in sync.
+
+## Development
+
+### Modifying the grammar
+
+1. Edit `grammar.js`.
+2. Regenerate the parser:
+   ```bash
+   npx tree-sitter generate
+   ```
+3. Update `highlights.scm` (in both `languages/flang/` and `queries/`) if you added new keywords or node types.
+4. Commit all changes (including generated `src/` files).
+5. Update `extension.toml` with the new commit SHA:
+   ```bash
+   git rev-parse HEAD
+   # Put the output in extension.toml: rev = "<sha>"
+   ```
+6. Reinstall the dev extension in Zed.
+
+### Testing
+
+```bash
+# Regenerate parser from grammar
+npx tree-sitter generate
+
+# Parse a sample file and view the syntax tree
+npx tree-sitter parse sample.f
+
+# Test syntax highlighting
+npx tree-sitter highlight sample.f
+
+# Lint grammar.js
+npx eslint grammar.js
+```
+
+## License
+
+MIT
