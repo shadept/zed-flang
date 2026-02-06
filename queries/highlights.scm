@@ -23,9 +23,10 @@
   "return"
   "defer"
   "loop"
-  "break"
-  "continue"
 ] @keyword.control
+
+(break_statement) @keyword.control
+(continue_statement) @keyword.control
 
 [
   "import"
