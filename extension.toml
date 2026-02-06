@@ -10,4 +10,4 @@ repository = "https://github.com/example/flang"
 
 [grammars.flang]
 repository = "file:///C:/Users/Shade/Projects/zed-flang"
-rev = "641c9bcc18b51b72819a21e2c3c9be418f08d9da"
+rev = "HEAD"
