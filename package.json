@@ -31,11 +31,8 @@
     "generate": "tree-sitter generate",
     "build": "tree-sitter generate && tree-sitter build",
     "test": "tree-sitter test",
-    "parse": "tree-sitter parse",
-    "highlight": "tree-sitter highlight",
     "lint": "eslint grammar.js",
-    "prestart": "tree-sitter build --wasm",
-    "start": "tree-sitter playground"
+    "start": "tree-sitter build --wasm && tree-sitter playground"
   },
   "tree-sitter": [
     {
