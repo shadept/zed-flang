@@ -45,29 +45,36 @@
 ; Types
 (primitive_type) @type.builtin
 
-(_type) @type
+(type) @type
 
 (generic_type_parameter) @type.parameter
 
 ; Struct definition
 (struct_definition
-  name: (_type) @type.definition)
+  name: (type) @type.definition)
 
 (struct_field
   name: (identifier) @property)
 
 ; Enum definition
 (enum_definition
-  name: (_type) @type.definition)
+  name: (type) @type.definition)
 
 (enum_variant
-  name: (_type) @type.variant)
+  name: (type) @type.variant)
 
 ; Function definition
 (function_definition
   name: (identifier) @function.definition)
 
 (parameter
+  name: (identifier) @variable.parameter)
+
+; Lambda expressions
+(lambda_expression
+  "fn" @keyword.function)
+
+(lambda_param
   name: (identifier) @variable.parameter)
 
 ; Function calls
@@ -85,7 +92,7 @@
 
 (member_expression
   "." @punctuation.delimiter
-  (_type) @type.variant)
+  (type) @type.variant)
 
 ; Variables
 (let_statement
@@ -108,11 +115,11 @@
 (wildcard_pattern) @variable.builtin
 
 (variant_pattern
-  (_type) @type.variant)
+  (type) @type.variant)
 
 ; Struct literals
 (struct_literal
-  (_type) @type)
+  (type) @type)
 
 (field_initializer
   name: (identifier) @property)
