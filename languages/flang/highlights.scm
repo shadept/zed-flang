@@ -51,17 +51,17 @@
 
 ; Struct definition
 (struct_definition
-  name: (type) @type.definition)
+  name: (identifier) @type.definition)
 
 (struct_field
   name: (identifier) @property)
 
 ; Enum definition
 (enum_definition
-  name: (type) @type.definition)
+  name: (identifier) @type.definition)
 
 (enum_variant
-  name: (type) @type.variant)
+  name: (identifier) @type.variant)
 
 ; Function definition
 (function_definition
@@ -92,7 +92,7 @@
 
 (member_expression
   "." @punctuation.delimiter
-  (type) @type.variant)
+  (identifier) @type.variant)
 
 ; Variables
 (let_statement
@@ -115,11 +115,11 @@
 (wildcard_pattern) @variable.builtin
 
 (variant_pattern
-  (type) @type.variant)
+  (identifier) @type.variant)
 
 ; Struct literals
 (struct_literal
-  (type) @type)
+  (identifier) @type)
 
 (field_initializer
   name: (identifier) @property)
