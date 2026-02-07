@@ -6,11 +6,11 @@
 
 ; Structs
 (struct_definition
-  name: (type_identifier) @name) @item
+  name: (_type) @name) @item
 
 ; Enums
 (enum_definition
-  name: (type_identifier) @name) @item
+  name: (_type) @name) @item
 
 ; Top-level constants
 (const_declaration
