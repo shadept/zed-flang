@@ -10,4 +10,8 @@ repository = "https://github.com/example/flang"
 
 [grammars.flang]
 repository = "file:///C:/Users/Shade/Projects/zed-flang"
-rev = "f9f28addd702a2299fd8d8b02a2db2d3c60bfa07"
+rev = "0240aae4026c6c1a7cd2ac5c971634e4daead92a"
+
+[language_servers.flang]
+name = "FLang Language Server"
+languages = ["FLang"]

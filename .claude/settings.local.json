@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tree-sitter:*)",
+      "WebFetch(domain:docs.helix-editor.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:zed.dev)",
+      "mcp__acp__Bash",
+      "mcp__acp__Edit"
+    ]
+  }
+}

@@ -227,8 +227,7 @@ module.exports = grammar({
         'let',
         field('name', $.identifier),
         optional(seq(':', field('type', $.type))),
-        '=',
-        field('value', $.expression),
+        optional(seq('=', field('value', $.expression))),
       ),
 
     const_statement: ($) =>
@@ -253,7 +252,10 @@ module.exports = grammar({
     for_statement: ($) =>
       seq(
         'for',
-        seq(field('pattern', $.identifier), 'in', field('iterable', $.expression)),
+        choice(
+          seq('(', field('pattern', $.identifier), 'in', field('iterable', $.expression), ')'),
+          seq(field('pattern', $.identifier), 'in', field('iterable', $.expression)),
+        ),
         field('body', $.block),
       ),
 
@@ -305,7 +307,12 @@ module.exports = grammar({
       seq(field('scrutinee', $.expression), 'match', '{', repeat($.match_arm), '}'),
 
     match_arm: ($) =>
-      seq(field('pattern', $.pattern), '=>', field('body', $.expression), optional(',')),
+      seq(
+        field('pattern', $.pattern),
+        '=>',
+        field('body', choice($.block, $.expression)),
+        optional(','),
+      ),
 
     pattern: ($) => choice($.wildcard_pattern, $.variant_pattern, 'else'),
 
@@ -326,9 +333,11 @@ module.exports = grammar({
           'if',
           field('condition', $.expression),
           field('consequence', $.block),
-          optional(seq('else', field('alternative', $.block))),
+          optional(field('alternative', $.else_clause)),
         ),
       ),
+
+    else_clause: ($) => seq('else', choice($.if_expression, $.block)),
 
     primary_expression: ($) =>
       choice(
@@ -426,17 +435,13 @@ module.exports = grammar({
       seq(field('name', $.identifier), optional(seq(':', field('type', $.type)))),
 
     member_expression: ($) =>
-      prec.left(
-        'member',
-        seq($.expression, '.', choice($.identifier, $.identifier, $.number_literal)),
-      ),
+      prec.left('member', seq($.expression, '.', choice($.identifier, $.number_literal))),
 
     index_expression: ($) => prec.left('member', seq($.expression, '[', $.expression, ']')),
 
     dereference_expression: ($) => prec.left('member', seq($.expression, '.', '*')),
 
-    optional_chain_expression: ($) =>
-      prec.left('member', seq($.expression, '?.', choice($.identifier, $.identifier))),
+    optional_chain_expression: ($) => prec.left('member', seq($.expression, '?.', $.identifier)),
 
     // ===== LITERALS =====
     number_literal: ($) =>
@@ -449,8 +454,14 @@ module.exports = grammar({
 
     string_literal: ($) => seq('"', repeat(choice($.escape_sequence, /[^"\\]+/)), '"'),
 
-    // eslint-disable-next-line quotes
-    char_literal: ($) => seq("'", choice($.escape_sequence, /[^'\\]/), "'"),
+    char_literal: ($) =>
+      choice(
+        // eslint-disable-next-line quotes
+        seq("'", choice($.escape_sequence, /[^'\\]/), "'"),
+        // Byte char literal (b'x') — wrapped in token() so 'b' isn't extracted as a keyword
+        // eslint-disable-next-line quotes
+        token(seq('b', "'", choice(/\\[nrt"'\\0]/, /[^'\\]/), "'")),
+      ),
 
     escape_sequence: ($) => /\\[nrt"'\\0]/,
 
@@ -467,4 +478,4 @@ module.exports = grammar({
     // ===== COMMENTS =====
     line_comment: ($) => seq('//', /.*/),
   },
-})
+});

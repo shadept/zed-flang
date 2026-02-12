@@ -1,12 +1,13 @@
 # zed-flang
 
-Zed editor extension providing tree-sitter based syntax highlighting for the FLang programming language.
+Zed editor extension providing tree-sitter based syntax highlighting and LSP integration for the FLang programming language.
 
 ## Project Structure
 
 ```
 zed-flang/
-├── extension.toml              # Zed extension manifest (grammar ref, metadata)
+├── extension.toml              # Zed extension manifest (grammar ref, LSP, metadata)
+├── Cargo.toml                  # Rust crate config (builds WASM extension for Zed)
 ├── grammar.js                  # Tree-sitter grammar definition (source of truth)
 ├── tree-sitter.json            # Tree-sitter CLI metadata
 ├── package.json                # Node.js config for tree-sitter-cli tooling
@@ -19,8 +20,9 @@ zed-flang/
 │       ├── injections.scm      # Language injection rules (placeholder)
 │       └── outline.scm         # Symbol outline for navigation panel
 ├── queries/                    # Tree-sitter CLI query files (mirrors languages/flang/)
-├── src/                        # Generated parser (do not edit manually)
-│   ├── parser.c                # Generated from grammar.js
+├── src/
+│   ├── lib.rs                  # Zed extension entry point (LSP integration, compiled to WASM)
+│   ├── parser.c                # Generated from grammar.js (do not edit manually)
 │   ├── grammar.json
 │   ├── node-types.json
 │   └── tree_sitter/            # Tree-sitter runtime headers
@@ -33,6 +35,7 @@ zed-flang/
 2. It does a shallow git clone from the `repository` URL at the specified `rev` (commit SHA) into an internal `grammars/flang/` directory.
 3. It compiles `src/parser.c` from the cloned repo to WASM using its built-in WASI SDK.
 4. It reads query files from `languages/flang/*.scm` for highlighting, indentation, and outlines.
+5. It compiles `src/lib.rs` (via `Cargo.toml`) to WASM and calls `language_server_command()` to launch the LSP.
 
 ## Critical Maintenance Rules
 
@@ -120,6 +123,44 @@ Avoid 3-level nesting like `@type.enum.variant` -- Zed may not recognize it. Use
 
 FLang uses `.f` which conflicts with Fortran. This is intentional. Users may need to manually select FLang as the language in Zed for `.f` files if Fortran support is also installed.
 
+## LSP Integration
+
+The extension launches the FLang compiler's built-in LSP server via `flang --lsp` (stdin/stdout JSON-RPC).
+
+### How it works
+
+`src/lib.rs` implements the `zed::Extension` trait. The `language_server_command()` method:
+1. Checks for a user-configured binary path via Zed settings
+2. Falls back to `worktree.which("flang")` for PATH lookup
+3. Returns `flang --lsp` as the command
+
+### User configuration
+
+Users can set a custom `flang` binary path in Zed settings:
+```json
+{
+  "lsp": {
+    "flang": {
+      "binary": {
+        "path": "/path/to/flang"
+      }
+    }
+  }
+}
+```
+
+### Building the WASM extension
+
+```bash
+# One-time setup
+rustup target add wasm32-wasip1
+
+# Build
+cargo build --target wasm32-wasip1
+```
+
+Zed compiles the extension automatically during dev extension install, so manual builds are only needed for verification.
+
 ## Testing
 
 ```bash
@@ -134,6 +175,9 @@ npx tree-sitter highlight sample.f
 
 # Lint grammar.js
 npx eslint grammar.js
+
+# Verify WASM extension compiles (requires: rustup target add wasm32-wasip1)
+cargo build --target wasm32-wasip1
 ```
 
 ## Maintaining This File
@@ -154,7 +198,9 @@ Claude should keep this CLAUDE.md up to date as the project evolves. When making
 - `&` is also used as unary address-of; tree-sitter resolves via conflict entries
 - Primitive types: `i8 i16 i32 i64 u8 u16 u32 u64 usize isize bool` -- no floats, no `void`, no `never`
 - Number literals support type suffixes: `42i32`, `1_000usize`
-- `if`/`for` parentheses are optional: both `if (x) {}` and `if x {}` are valid
+- `if`/`for` parentheses are optional: both `if (x) {}` and `if x {}` are valid; `for (x in y) {}` and `for x in y {}` are both valid
+- `else if` chains are supported: `if a {} else if b {} else {}`
+- Byte char literals: `b'x'` (in addition to regular `'x'`)
 - `loop {}` is the infinite loop construct; `break` and `continue` are statements
 - Directives are any `#identifier` (e.g., `#foreign`, `#intrinsic`, `#whatever`)
 - Only `=` and `+=` compound assignment exist
@@ -170,3 +216,7 @@ Claude should keep this CLAUDE.md up to date as the project evolves. When making
 - `tree-sitter.json` originally referenced a non-existent `src/scanner.c` -- this grammar has no external scanner
 - `grammars/` directory is created by Zed during dev extension install -- it's gitignored
 - Optional `if`/`for` parens required adding conflict entries for `grouped_expression`
+- `else if` chains require a separate `else_clause` rule (inline `choice($.block, $.if_expression)` doesn't work in tree-sitter)
+- Byte char prefix `b` in `char_literal` must NOT use a string literal `'b'` directly — tree-sitter's keyword extraction turns it into a keyword via the `word` rule, breaking all identifiers named `b`. Use `token()` to wrap the byte variant instead
+- Member-expression highlights use `#match?` predicates to disambiguate `@property` (lowercase) vs `@type.variant` (uppercase) — duplicate patterns without predicates cause last-match-wins behavior
+- Tree-sitter queries are **last-match-wins** for the same node. `(identifier) @variable` MUST be the first pattern in highlights.scm so all specific patterns (types, functions, properties, etc.) override it. Putting it last will override everything and break highlighting

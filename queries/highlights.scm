@@ -1,5 +1,11 @@
 ; FLang Tree-sitter Highlights
 ; =============================
+; IMPORTANT: tree-sitter queries are last-match-wins for the same node.
+; The (identifier) @variable fallback MUST be first so all specific
+; patterns below override it.
+
+; Identifiers (fallback)
+(identifier) @variable
 
 ; Comments
 (line_comment) @comment
@@ -44,10 +50,10 @@
 
 ; Types
 (primitive_type) @type.builtin
-
-(type) @type
-
+(named_type (identifier) @type)
 (generic_type_parameter) @type.parameter
+(generic_type_parameter (identifier) @type.parameter)
+(generic_parameter (identifier) @type.parameter)
 
 ; Struct definition
 (struct_definition
@@ -81,20 +87,29 @@
 (function_call
   function: (identifier) @function.call)
 
+; Method call: obj.method(args)
 (function_call
   function: (member_expression
-    (identifier) @function.method))
+    (identifier) @function.method
+    (#match? @function.method "^[a-z_]")))
 
-; Member access
+; Enum variant with payload in call: Type.Variant(args)
+(function_call
+  function: (member_expression
+    (identifier) @type.variant
+    (#match? @type.variant "^[A-Z]")))
+
+; Enum variant access: Type.Variant
 (member_expression
-  "." @punctuation.delimiter
-  (identifier) @property)
+  (identifier) @type.variant
+  (#match? @type.variant "^[A-Z]"))
 
+; Property access: obj.field
 (member_expression
-  "." @punctuation.delimiter
-  (identifier) @type.variant)
+  (identifier) @property
+  (#match? @property "^[a-z_]"))
 
-; Variables
+; Variables and constants
 (let_statement
   name: (identifier) @variable)
 
@@ -183,6 +198,3 @@
   ";"
   "?"
 ] @punctuation.delimiter
-
-; Identifiers (fallback)
-(identifier) @variable

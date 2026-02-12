@@ -306,6 +306,25 @@
     }
   },
   {
+    "type": "else_clause",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "block",
+          "named": true
+        },
+        {
+          "type": "if_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "enum_body",
     "named": true,
     "fields": {},
@@ -714,7 +733,7 @@
         "required": false,
         "types": [
           {
-            "type": "block",
+            "type": "else_clause",
             "named": true
           }
         ]
@@ -863,7 +882,7 @@
       },
       "value": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "expression",
@@ -902,6 +921,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "block",
+            "named": true
+          },
           {
             "type": "expression",
             "named": true
