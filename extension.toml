@@ -1,7 +1,7 @@
 id = "flang"
 name = "FLang"
 description = "FLang language support for Zed"
-version = "0.1.1"
+version = "0.1.2"
 schema_version = 1
 authors = [
     "João Furtado <jllf.17@gmail.com>",

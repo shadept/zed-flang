@@ -86,17 +86,7 @@ impl FlangExtension {
             if fs::metadata(path).is_ok() {
                 eprintln!("[flang-ext] Auto mode: using cached binary: {path}");
                 let version_dir = path.rsplit_once('/').or(path.rsplit_once('\\')).map(|(d, _)| d).unwrap_or(".");
-                let stdlib_path = format!("{version_dir}/stdlib");
-                let mut args = vec!["--lsp".to_string()];
-                if fs::metadata(&stdlib_path).is_ok() {
-                    args.push("--stdlib-path".to_string());
-                    args.push(stdlib_path);
-                }
-                return Ok(zed::Command {
-                    command: path.clone(),
-                    args,
-                    env: worktree.shell_env(),
-                });
+                return self.build_auto_command(path, version_dir, worktree);
             }
             // Cached path is stale, clear it.
             self.cached_binary_path = None;
@@ -241,11 +231,18 @@ impl FlangExtension {
         version_dir: &str,
         worktree: &zed::Worktree,
     ) -> Result<zed::Command> {
-        let stdlib_path = format!("{version_dir}/stdlib");
+        // Args are passed verbatim to the LSP process, which runs in the project
+        // root — not the extension's work directory. We must use absolute paths.
+        let work_dir = std::env::current_dir()
+            .map_err(|e| format!("Failed to get extension work dir: {e}"))?;
+        let stdlib_path = work_dir.join(version_dir).join("stdlib");
+        eprintln!("[flang-ext] Resolved stdlib path: {}", stdlib_path.display());
         let mut args = vec!["--lsp".to_string()];
-        if fs::metadata(&stdlib_path).is_ok() {
+        if stdlib_path.exists() {
             args.push("--stdlib-path".to_string());
-            args.push(stdlib_path);
+            args.push(stdlib_path.to_string_lossy().into_owned());
+        } else {
+            eprintln!("[flang-ext] Warning: stdlib not found at {}", stdlib_path.display());
         }
         Ok(zed::Command {
             command: binary_path.to_string(),
