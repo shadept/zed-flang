@@ -1,10 +1,4 @@
-node_modules/
-*.dll
-*.obj
-*.exp
-*.lib
-*.wasm
-build/
-grammars/
 target/
+*.wasm
+grammars/
 Cargo.lock
