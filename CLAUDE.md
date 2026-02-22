@@ -76,23 +76,47 @@ Tree-sitter query compilation will fail silently if you reference a keyword stri
 
 The extension launches the FLang compiler's built-in LSP server via `flang --lsp` (stdin/stdout JSON-RPC).
 
+### Compiler modes
+
+The extension supports two modes, configured via `lsp.flang.settings.mode`:
+
+- **`auto`** (default): Automatically downloads the FLang compiler from GitHub releases (`shadept/flangv2`). The compiler is stored in version-tagged directories (e.g., `flang-v0.1.0/`) in the extension's working directory. On each LSP startup, it checks for a newer release and downloads it if available. Old versions are cleaned up automatically. The stdlib path is auto-detected at `<version-dir>/stdlib`.
+- **`manual`**: User provides a binary path via `lsp.flang.binary.path` or relies on PATH lookup. No automatic downloads.
+
 ### How it works
 
 `src/lib.rs` implements the `zed::Extension` trait. The `language_server_command()` method:
-1. Checks for a user-configured binary path via Zed settings
-2. Falls back to `worktree.which("flang")` for PATH lookup
-3. Returns `flang --lsp` as the command
+1. Reads `lsp.flang.settings.mode` (default: `"auto"`)
+2. **Auto mode**: checks for latest GitHub release, downloads if needed, returns path to downloaded binary with `--lsp --stdlib-path <path>` args
+3. **Manual mode**: uses `lsp.flang.binary.path` or `worktree.which("flang")`, returns `flang --lsp`
 
 ### User configuration
 
-Users can set a custom `flang` binary path in Zed settings:
+**Auto mode** (default -- no configuration needed):
+```json
+{}
+```
+
+**Manual mode** with custom binary path:
 ```json
 {
   "lsp": {
     "flang": {
+      "settings": { "mode": "manual" },
       "binary": {
         "path": "/path/to/flang"
       }
+    }
+  }
+}
+```
+
+**Manual mode** with PATH lookup:
+```json
+{
+  "lsp": {
+    "flang": {
+      "settings": { "mode": "manual" }
     }
   }
 }
