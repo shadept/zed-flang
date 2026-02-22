@@ -6,7 +6,7 @@ schema_version = 1
 authors = [
     "João Furtado <jllf.17@gmail.com>",
 ]
-repository = "https://github.com/example/flang"
+repository = "https://github.com/shadept/zed-flang"
 
 [grammars.flang]
 repository = "https://github.com/shadept/tree-sitter-flang"
