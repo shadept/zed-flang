@@ -1,7 +1,7 @@
 id = "flang"
 name = "FLang"
 description = "FLang language support for Zed"
-version = "0.1.0"
+version = "0.1.1"
 schema_version = 1
 authors = [
     "João Furtado <jllf.17@gmail.com>",
@@ -10,7 +10,7 @@ repository = "https://github.com/shadept/zed-flang"
 
 [grammars.flang]
 repository = "https://github.com/shadept/tree-sitter-flang"
-rev = "7f9aa5badee21c6e3f05c1e47d1a3c2bd12ad8f7"
+rev = "c515c7084d2979e73ae4b6ea5ca9936c3177e732"
 
 [language_servers.flang]
 name = "FLang Language Server"
