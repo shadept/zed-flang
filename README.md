@@ -1,6 +1,6 @@
 # zed-flang
 
-Zed editor extension for the [FLang](https://github.com/example/flang) programming language.
+Zed editor extension for the [FLang](https://github.com/shadept/flang) programming language.
 
 ## Features
 
@@ -32,7 +32,7 @@ The `.f` extension is shared with Fortran. If you have a Fortran extension insta
 ## Dependencies
 
 - [tree-sitter-flang](https://github.com/shadept/tree-sitter-flang) -- Tree-sitter grammar (fetched automatically by Zed via `extension.toml`)
-- [flang](https://github.com/example/flang) -- FLang compiler (needed for LSP support; must be in PATH or configured in Zed settings)
+- [flang](https://github.com/shadept/flang) -- FLang compiler (needed for LSP support; must be in PATH or configured in Zed settings)
 
 ## LSP Configuration
 
